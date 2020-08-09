@@ -1,174 +1,283 @@
       $set sourceformat"free"
-
       *>Divisão de identificação do programa
        identification division.
-       program-id. "lista11exercicio1".
+       program-id. "lista11exercicio1v2".
        author. "Debora Reinert".
        installation. "PC".
-       date-written. 15/07/2020.
-       date-compiled. 15/07/2020.
-
-
-
+       date-written. 16/07/2020.
+       date-compiled. 16/07/2020.
       *>Divisão para configuração do ambiente
        environment division.
        configuration section.
            special-names. decimal-point is comma.
-
       *>-----Declaração dos recursos externos
        input-output section.
        file-control.
-       i-o-control.
+                                   select arqTemp assign to "arqTemp.dat"
+                                   organization is indexed
+                                   access mode is dynamic
+                                   lock mode is automatic
+                                   record key is fd-dia
+                                   file status is ws-fs-arqTemp.
 
+       i-o-control.
       *>Declaração de variáveis
        data division.
-
       *>----Variaveis de arquivos
        file section.
-
+       fd arqTemp.
+       01 fd-temp.
+           05 fd-dia                                pic  9(08).
+           05 fd-temperatura                        pic  9(02)v9.
 
       *>----Variaveis de trabalho
        working-storage section.
-       01 ws-temperaturas occurs 30.
-          05 ws-temp                               pic s9(02)v99.
-
-       77 ws-media-temp                            pic s9(02)v99.
-       77 ws-temp-total                            pic s9(03)v99.
-
-
-       77 ws-dia                                   pic 9(02).
-       77 ws-ind-temp                              pic 9(02).
-
-       77 ws-sair                                  pic x(01).
-
-
+       77 ws-menu                                   pic x(2).
+       01 ws-temperaturas.
+          05 ws-temperatura                                pic 9(02)v99.
+          05 ws-dia                                 pic 9(08).
+       01 ws-msn-erro.
+          05 ws-msn-erro-ofsset                     pic 9(04).
+          05 ws-msn-erro-cod                        pic 9(04).
+          05 ws-msn-erro-text                       pic x(42).
+       77 ws-sair                                   pic x(01).
+          88  ws-sair-programa                      value "N" "n".
+          88  ws-voltar                             value "V" "v".
+       77  ws-fs-arqTemp                            pic 9(02).
       *>----Variaveis para comunicação entre programas
        linkage section.
-
-
       *>----Declaração de tela
        screen section.
-
       *>Declaração do corpo do programa
        procedure division.
-
-
            perform inicializa.
            perform processamento.
            perform finaliza.
-
       *>------------------------------------------------------------------------
       *>  Procedimentos de inicialização
       *>------------------------------------------------------------------------
        inicializa section.
-           move 12      to   ws-temp(1)
-           move 23      to   ws-temp(2)
-           move 35      to   ws-temp(3)
-           move 32      to   ws-temp(4)
-           move 31      to   ws-temp(5)
-           move 31      to   ws-temp(6)
-           move 23      to   ws-temp(7)
-           move 23      to   ws-temp(8)
-           move 25      to   ws-temp(9)
-           move 18      to   ws-temp(10)
-           move 17      to   ws-temp(11)
-           move 11      to   ws-temp(12)
-           move 0       to   ws-temp(13)
-           move 5       to   ws-temp(14)
-           move 12      to   ws-temp(15)
-           move 11      to   ws-temp(16)
-           move 15      to   ws-temp(17)
-           move 23      to   ws-temp(18)
-           move 25      to   ws-temp(19)
-           move 28      to   ws-temp(20)
-           move 19      to   ws-temp(21)
-           move 24      to   ws-temp(22)
-           move 30      to   ws-temp(23)
-           move 32      to   ws-temp(24)
-           move 32      to   ws-temp(25)
-           move 31      to   ws-temp(26)
-           move 23      to   ws-temp(27)
-           move 24      to   ws-temp(28)
-           move 39      to   ws-temp(29)
-           move 38      to   ws-temp(30)
+           open i-o arqTemp
+           if ws-fs-arqTemp  <> 00
+           and ws-fs-arqTemp <> 05 then
+               move 1                                   to ws-msn-erro-ofsset
+               move ws-fs-arqTemp                       to ws-msn-erro-cod
+               move "Erro ao abrir arquivo: (arqTemp) " to ws-msn-erro-text
+               perform finaliza-anormal
+           end-if
            .
        inicializa-exit.
            exit.
-
       *>------------------------------------------------------------------------
       *>  Processamento principal
       *>------------------------------------------------------------------------
        processamento section.
-
-      *>   chamando rotina de calculo da média de temp.
-           perform calc-media-temp
-
-      *>    menu do sistema
-           perform until ws-sair = "S"
-                      or ws-sair = "s"
-               display erase
-
-               display "Digite o dia que deseja testar: "
-               accept ws-dia
-
-               if  ws-dia >= 1
-               and ws-dia <= 30 then
-                   if ws-temp(ws-dia) > ws-media-temp then
-                       display "A temperatura do dia " ws-dia " esta acima da media"
-                   else
-                   if ws-temp(ws-dia) < ws-media-temp then
-                           display "A temperatura do dia " ws-dia " esta abaixo da media"
-                   else
-                           display "A temperatura esta na media"
-                   end-if
-                   end-if
+           display erase
+           perform until ws-sair-programa
+               move space to ws-sair
+               display "Escolha uma das opções abaixo: "
+               display "'Ca' para cadastrar"
+               display "'Ci' para consulta indexada"
+               display "'Cs' para consulta sequencial"
+               display "'De' para deletar"
+               display "'Al' para alterar"
+               accept ws-menu
+               if ws-menu = "Ca" or "ca" then
+                 perform cadastrar-temperatura
                else
-                   display "O dia informado é invalido"
+                    if ws-menu = "Ci" or "ci" then
+                      perform consultar-temperatura
+                   else
+                if ws-menu = "Cs" or "cs" then
+                         perform seq
+                        else
+                             if ws-menu = "De" or "de" then
+                                  perform deletar-temperatura
+                             else
+                                 if ws-menu = "Al" or "al" then
+                                    perform alterar-temperatura
+                                  else
+                                   display "Opcao Inexistente"
                end-if
-
-               display "Digite (T) para testar outra temperatura"
-               display "Ou digite (S) para sair"
-               accept ws-sair
            end-perform
            .
+
        processamento-exit.
            exit.
 
       *>------------------------------------------------------------------------
-      *>  Calculo da média de temperatura
+      *>  Cadastro de temperatura
       *>------------------------------------------------------------------------
-       calc-media-temp section.
-
-           move 0 to ws-temp-total
-           perform varying ws-ind-temp from 1 by 1 until ws-ind-temp > 30
-               compute ws-temp-total = ws-temp-total + ws-temp(ws-ind-temp)
+       cadastrar-temperatura section.
+           display erase
+           perform until ws-voltar or ws-sair-programa
+               display "Digite a temperatura: "
+               accept ws-temperatura
+               display "Digite o dia: "
+               accept  ws-dia
+               write fd-temp from ws-temperaturas
+               if ws-fs-arqTemp <> 0 then
+                   move 2                                         to ws-msn-erro-ofsset
+                   move ws-fs-arqTemp                             to ws-msn-erro-cod
+                   move "Erro ao escrever arquivo: (arqTemp) "    to ws-msn-erro-text
+                   perform finaliza-anormal
+               end-if
+               display "Deseja cadastrar mais um dia? Digite (S) para sim ou (V) para voltar"
+               accept ws-sair
            end-perform
-
-           compute ws-media-temp = ws-temp-total/30
-
-           .
-       calc-media-temp-exit.
+               .
+       cadastrar-temperatura-exit.
            exit.
+      *>------------------------------------------------------------------------
+      *>  Consulta de temperatura sequencial usando next
+      *>------------------------------------------------------------------------
+       seq section.
+           display erase
+           perform consultar-temperatura
+           perform until ws-voltar
+               read arqTemp next
+               if  ws-fs-arqTemp <> 0
+               and ws-fs-arqTemp = 10 then
+                      perform seq2
+                  else
+                      move 3                                         to ws-msn-erro-ofsset
+                      move ws-fs-arqTemp                             to ws-msn-erro-cod
+                      move "Erro ao ler arquivo: (arqTemp) "         to ws-msn-erro-text
+                      perform finaliza-anormal
+                  end-if
+               move  fd-temp to  ws-temperaturas
+               display "Digite a temperatura: "
+               accept ws-temperatura
+               display "Digite o dia: "
+               accept  ws-dia
+               display "Deseja consultar mais um dia? Digite (S) para sim ou (V) para voltar"
+               accept ws-sair
+           end-perform
+           .
+       seq-exit.
+           exit.
+      *>------------------------------------------------------------------------
+      *>  Consulta de temperatura sequencial usando previous
+      *>------------------------------------------------------------------------
+       seq2 section.
+           display erase
+           perform until ws-voltar
+               read arqTemp previous
+               if  ws-fs-arqTemp <> 0  then
+                  if ws-fs-arqTemp = 10 then
+                      perform seq
+                  else
+                      move 4                                         to ws-msn-erro-ofsset
+                      move ws-fs-arqTemp                             to ws-msn-erro-cod
+                      move "Erro ao ler arquivo: (arqTemp) "         to ws-msn-erro-text
+                      perform finaliza-anormal
+                  end-if
+               end-if
+               move  fd-temp       to  ws-temperaturas
+               display "Digite a temperatura: "
+               accept ws-temperatura
+               display "Digite o dia: "
+               accept  ws-dia
+               display "Deseja consultar mais um dia? Digite (S) para sim ou (V) para voltar"
+           end-perform
+           .
+       seq2-exit.
+           exit.
+      *>------------------------------------------------------------------------
+      *>  Consulta de temperatura indexada
+      *>------------------------------------------------------------------------
+       consultar-temperatura section.
+               display erase
+               display "Digite o dia que deseja consultar: "
+               accept ws-dia
+               move ws-dia to fd-dia
+               read arqTemp
 
+               if  ws-fs-arqTemp <> 0
+               and ws-fs-arqTemp <> 10
+               and ws-fs-arqTemp = 23 then
+                       display "A data informada é inexistente"
+                   else
+                       move 5                                         to ws-msn-erro-ofsset
+                       move ws-fs-arqTemp                             to ws-msn-erro-cod
+                       move "Erro ao ler arquivo: (arqTemp) "         to ws-msn-erro-text
+                       perform finaliza-anormal
+                   end-if
+               move  fd-temp       to  ws-temperaturas
+               display "A temperatura é: "  ws-temperatura
+               display "O dia é: "  ws-dia
+           .
+       consultar-temperatura-exit.
+           exit.
+      *>------------------------------------------------------------------------
+      *>  Alterar temperatura
+      *>------------------------------------------------------------------------
+       alterar-temperatura section.
+               display erase
+               perform consultar-temperatura
+               display "Informe uma nova temperatura para alterar a antiga: "
+               accept ws-temperatura
+               move ws-temperatura to fd-temperatura
+               rewrite fd-temp
+               if  ws-fs-arqTemp = 0 then
+                   display "A temperatura foi alterada"
+               else
+                   move 6                                         to ws-msn-erro-ofsset
+                   move ws-fs-arqTemp                             to ws-msn-erro-cod
+                   move "Erro ao alterar arquivo: (arqTemp) "     to ws-msn-erro-text
+                   perform finaliza-anormal
+               end-if
+           .
+       alterar-temp-exit.
+           exit.
+      *>------------------------------------------------------------------------
+      *>  Deletar temperatura
+      *>------------------------------------------------------------------------
+       deletar-temperatura section.
 
+               display erase
+               display "Digite o dia que será excluido: "
+               accept ws-dia
+               move ws-dia to fd-dia
+               delete arqTemp
+               if  ws-fs-arqTemp = 0 then
+                   display "A temperatura do dia digitado foi excluida"
+               else
+                   if ws-fs-arqTemp = 23 then
+                       display "A data informada nao existe!"
+                   else
+                       move 7                                         to ws-msn-erro-ofsset
+                       move ws-fs-arqTemp                             to ws-msn-erro-cod
+                       move "Erro ao apagar arquivo: (arqTemp) "      to ws-msn-erro-text
+                       perform finaliza-anormal
+                   end-if
+               end-if
+           .
+       deletar-temp-exit.
+           exit.
       *>------------------------------------------------------------------------
       *>  Finalização
       *>------------------------------------------------------------------------
        finaliza section.
+           display erase
+           close arqTemp
+           if ws-fs-arqTemp <> 0 then
+               move 8                                to ws-msn-erro-ofsset
+               move ws-fs-arqTemp                    to ws-msn-erro-cod
+               move "Erro ao fechar arq. arqTemp "   to ws-msn-erro-text
+               perform finaliza-anormal
+           end-if
            Stop run
            .
        finaliza-exit.
            exit.
-
-
-
-
-
-
-
-
-
-
-
-
-
+      *>------------------------------------------------------------------------
+      *>  Finalização  Anormal
+      *>------------------------------------------------------------------------
+       finaliza-anormal section.
+           display erase
+           display ws-msn-erro-text.
+           Stop run
+           .
+       finaliza-anormal-exit.
+           exit.
